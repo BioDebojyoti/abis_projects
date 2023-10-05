@@ -1,0 +1,861 @@
+################################################################################
+load_all_parameter <- function(){
+  
+  all_parameters <- data.frame(
+    matrix(ncol = 4, nrow = 0)
+  )
+  colnames(all_parameters) <- c("variable2categorise",
+                                "category_variable",
+                                "breaks",
+                                "labels")
+  
+  
+  # c_22
+  variable2categorise = list("c_22")
+  category_variable = list("other_disability_or_disease")
+  breaks = list(c(0,1,2))
+  labels = list(c("yes","no"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_28
+  variable2categorise = list("c_28")
+  category_variable = list("other_vitamin_or_mineral")
+  breaks = list(c(0,1,2))
+  labels = list(c("yes","no"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  #
+  # c_29
+  variable2categorise = list("c_29")
+  category_variable = list("iron_supplement")
+  breaks = list(c(0,1,2))
+  labels = list(c("yes","no"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  #
+  # c_103  
+  variable2categorise = list("c_103")
+  category_variable = list("cooking_fat")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("butter", "oil", "margarine", "liquid_margarine"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  #
+  # c_104  
+  variable2categorise = list("c_104")
+  category_variable = list("sandwich_fat")
+  breaks = list(c(0,1,2,3))
+  labels = list(c("75% fat margarine", "low fat margarine", "no fat" ))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  #
+  # c_105  
+  variable2categorise = list("c_105")
+  category_variable = list("bread_slices")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("0-1", "1-2", "3-4", "5 or more" ))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  #
+  # c_106  
+  variable2categorise = list("c_106")
+  category_variable = list("milk_product")
+  breaks = list(c(0,1,2,3,4,5))
+  labels = list(c("nothing", "1-2 dl", "3-6 dl", "7-10 dl","more than 1 litre"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_106  
+  # variable2categorise = list("c_106")
+  # category_variable = list("milk_product_dichotomous")
+  # breaks = list(c(0,2,5))
+  # labels = list(c("nothing to 1-2 dl", "3-6 dl to 7-10 dl or more"))
+  # 
+  # 
+  # all_parameters <- rbind(
+  #   all_parameters, 
+  #   data.frame(
+  #     I(variable2categorise), 
+  #     I(category_variable), 
+  #     I(breaks), 
+  #     I(labels)
+  #   )
+  # )
+  
+  #
+  # # c_106  
+  variable2categorise = list("c_106")
+  category_variable = list("milk_product_alternate_ref")
+  breaks = list(c(0,1,2,3,4,5))
+  labels = list(c("nothing", "1-2 dl", "3-6 dl", "7-10 dl","more than 1 litre"))
+
+
+  all_parameters <- rbind(
+    all_parameters,
+    data.frame(
+      I(variable2categorise),
+      I(category_variable),
+      I(breaks),
+      I(labels)
+    )
+  )
+  
+  #
+  # # c_106  
+  # variable2categorise = list("c_106")
+  # category_variable = list("milk_product_tertile")
+  # breaks = list(c(0,2,3,5))
+  # labels = list(c("nothing to 1-2 dl", "3-6 dl", "7-10 dl to more than 1 litre"))
+  # 
+  # 
+  # all_parameters <- rbind(
+  #   all_parameters,
+  #   data.frame(
+  #     I(variable2categorise),
+  #     I(category_variable),
+  #     I(breaks),
+  #     I(labels)
+  #   )
+  # )
+  
+  
+  # c_109a
+  variable2categorise = list("c_109a")
+  category_variable = list("vegetables")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c( "daily", "3-5 times/week", "1-2 times/week", "seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109b
+  variable2categorise = list("c_109b")
+  category_variable = list("potatoes_root_vegetables")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c( "daily", "3-5 times/week", "1-2/times /week", "seldom" ))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109d
+  variable2categorise = list("c_109d")
+  category_variable = list("fish_lake")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  
+  # c_109e
+  variable2categorise = list("c_109e")
+  category_variable = list("fish_Baltic")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109f
+  variable2categorise = list("c_109f")
+  category_variable = list("fish_elsewhere")
+  breaks = list(c(0,3,4))
+  labels = list(c("1-2 times/week - daily","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # fish
+  variable2categorise = list("fish")
+  category_variable = list("fish_cat_year_3")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # fish
+  variable2categorise = list("fish")
+  category_variable = list("fish_cat_dichotomous")
+  breaks = list(c(0,2,4))
+  labels = list(c("3-5 times/week - daily","1-2 times/week - seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109g
+  variable2categorise = list("c_109g")
+  category_variable = list("eggs")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  
+  # c_109h
+  variable2categorise = list("c_109h")
+  category_variable = list("moose_roe_deer")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109i
+  variable2categorise = list("c_109i")
+  category_variable = list("red_meat")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109i
+  variable2categorise = list("c_109i")
+  category_variable = list("red_meat_dichotomous")
+  breaks = list(c(0,2,4))
+  labels = list(c("3-5 times/week - daily","1-2 times/week - seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # # c_109i
+  # variable2categorise = list("c_109i")
+  # category_variable = list("red_meat_dichotomous_alt")
+  # breaks = list(c(0,3,4))
+  # labels = list(c("1-2/3-5 times/week - daily","seldom"))
+  # 
+  # all_parameters <- rbind(
+  #   all_parameters, 
+  #   data.frame(
+  #     I(variable2categorise), 
+  #     I(category_variable), 
+  #     I(breaks), 
+  #     I(labels)
+  #   )
+  # )
+  
+  # c_109i
+  variable2categorise = list("c_109i")
+  category_variable = list("red_meat_alt")
+  breaks = list(c(0,2,3,4))
+  labels = list(c("3-5 times/week - daily","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109j
+  variable2categorise = list("c_109j")
+  category_variable = list("pork")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  
+  # c_109k
+  variable2categorise = list("c_109k")
+  category_variable = list("sausage")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  
+  # c_109l
+  variable2categorise = list("c_109l")
+  category_variable = list("mushrooms")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  
+  # c_109m
+  variable2categorise = list("c_109m")
+  category_variable = list("heavy_creme")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109n
+  variable2categorise = list("c_109n")
+  category_variable = list("potato_chips_cheese_doodles")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # # c_109o
+  # variable2categorise = list("c_109o")
+  # category_variable = list("cheese")
+  # breaks = list(c(0,1,2,3,4))
+  # labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  # 
+  # 
+  # all_parameters <- rbind(
+  #   all_parameters, 
+  #   data.frame(
+  #     I(variable2categorise), 
+  #     I(category_variable), 
+  #     I(breaks), 
+  #     I(labels)
+  #   )
+  # )
+  
+  
+  # c_109o
+  variable2categorise = list("c_109o")
+  category_variable = list("cheese_dichotomous")
+  breaks = list(c(0,2,4))
+  labels = list(c("3-5 times/week - daily","1-2 times/week - seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109p
+  variable2categorise = list("c_109p")
+  category_variable = list("cakes_pastry_biscuits")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # # c_109p
+  # variable2categorise = list("c_109p")
+  # category_variable = list("cakes_pastry_biscuits_dichotomous")
+  # breaks = list(c(0,2,4))
+  # labels = list(c("3-5 times/week - daily","1-2 times/week - seldom"))
+  # 
+  # 
+  # all_parameters <- rbind(
+  #   all_parameters, 
+  #   data.frame(
+  #     I(variable2categorise), 
+  #     I(category_variable), 
+  #     I(breaks), 
+  #     I(labels)
+  #   )
+  # )
+  
+  
+  # c_109q
+  variable2categorise = list("c_109q")
+  category_variable = list("chocolate_candy_bar")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109r
+  variable2categorise = list("c_109r")
+  category_variable = list("candy")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109r
+  variable2categorise = list("c_109r")
+  category_variable = list("candy_dichotomous")
+  breaks = list(c(0,2,4))
+  labels = list(c("3-5 times/week - daily","1-2 times/week - seldom"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109s
+  variable2categorise = list("c_109s")
+  category_variable = list("gruel")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109t
+  variable2categorise = list("c_109t")
+  category_variable = list("porridge")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109u
+  variable2categorise = list("c_109u")
+  category_variable = list("cornflakes_muesli")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109v
+  variable2categorise = list("c_109v")
+  category_variable = list("macaroni_spaghetti")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109w
+  variable2categorise = list("c_109w")
+  category_variable = list("popcorn")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109x
+  variable2categorise = list("c_109x")
+  category_variable = list("fresh_water")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109y
+  variable2categorise = list("c_109y")
+  category_variable = list("ice_cream")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109z
+  variable2categorise = list("c_109z")
+  category_variable = list("fruit_drinks")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109å
+  variable2categorise = list("c_109å")
+  category_variable = list("fresh_fruit")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_109ä
+  variable2categorise = list("c_109ä")
+  category_variable = list("tea")
+  breaks = list(c(0,3,4))
+  labels = list(c("1-2/3-5 times/week - daily","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  
+  # c_109ö
+  variable2categorise = list("c_109ö")
+  category_variable = list("coffee")
+  breaks = list(c(0,1,2,3,4))
+  labels = list(c("daily","3-5 times/week","1-2 times/week","seldom"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_114
+  variable2categorise = list("c_114")
+  category_variable = list("milk")
+  breaks = list(c(0,1,2,3,4,5,6,7))
+  labels = list(c("never", "1-3 times a week", "4-6 times a week","once a day", 
+                  "2 times a day", "3 times a day","4 times a day or more"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # c_116
+  variable2categorise = list("c_116")
+  category_variable = list("yoghurt_sour_milk")
+  breaks = list(c(0,1,2,3,4,5,6,7))
+  labels = list(c("never", "1-3 times a week", "4-6 times a week","once a day", 
+                  "2 times a day", "3 times a day","4 times a day or more"))
+  
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), 
+      I(category_variable), 
+      I(breaks), 
+      I(labels)
+    )
+  )
+  
+  # Gender
+  variable2categorise = list("Gender")
+  category_variable = list("Gender_cat")
+  breaks = list(c(-1,0,1))
+  labels = list(c("boy", "girl"))
+  
+  all_parameters <- rbind(
+    all_parameters, 
+    data.frame(
+      I(variable2categorise), I(category_variable), I(breaks), I(labels)
+    )
+  )
+  
+  return(as.data.frame(all_parameters))
+}
+
+all_parameters <- load_all_parameter()

@@ -1,0 +1,972 @@
+---
+title: "ABIS-psoriasis year-3 excluding auto-immune diseases"
+author: "Debojyoti Das"
+date: "2023-04-18"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+curr_os <- Sys.info()["sysname"][[1]]
+
+if (curr_os == "Windows"){
+  output_dir <- "C:\\Users\\debda22\\OneDrive - Linköpings universitet\\early_nutrition\\without_auto_immune_disease\\test_3"
+  # output_dir <- "C:\\Users\\debda22\\OneDrive - Linköpings universitet\\early_nutrition\\without_auto_immune_disease\\ABIS_year_3_final"
+  } else {
+  output_dir <- "/Users/debojyoti/OneDrive - Linköpings universitet/early_nutrition/without_auto_immune_disease/test_3" 
+  # output_dir <- "/Users/debojyoti/OneDrive - Linköpings universitet/early_nutrition/without_auto_immune_disease/ABIS_year_3_final"
+}
+
+dir.create(output_dir)
+```
+
+
+```{r}
+pacman::p_load(
+  haven,        # File import
+  here,         # File locator
+  sjlabelled,
+  janitor,      # 
+  data.table,   #
+  flextable,    #
+  comprehenr,   # List comprehension in R
+  tidyverse,    # data management + ggplot2 graphics, 
+  stringr,      # manipulate text strings 
+  purrr,        # loop over objects in a tidy way
+  gtsummary,    # summary statistics and tests 
+  broom,        # tidy up results from regressions
+  lmtest,       # likelihood-ratio tests
+  parameters,   # alternative to tidy up results from regressions
+  see,          # alternative to visualize forest plots
+  easystats,    # Forest plot
+  kableExtra,
+  forestplot,
+  rempsyc
+  )
+```
+
+load helping functions
+```{r, include=FALSE}
+
+source("all_parameters_ABIS_year_3.R", local = knitr::knit_global())
+source("useful_functions_ABIS_psoriasis_no_AD.R", local = knitr::knit_global())
+
+```
+
+Read cohort data from SAV format file
+```{r}
+if (curr_os == "Windows"){
+  abis_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\Variables.sav")
+  cohort_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\Early_nutrition_230223.sav")
+  psoriasis_diagonistic_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\L40.sav")
+  } else {
+  abis_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/Variables.sav")
+  cohort_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/Early_nutrition_230223.sav")
+  psoriasis_diagonistic_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/L40.sav")
+  }
+
+abis_table <- abis_table[,c("ABISnr","barn_år_mån", "ageM_cb","ageF_cb", "educationma")]
+
+abis_table <- abis_table %>% mutate(
+  child_dob = as.Date(
+    as.yearmon(as.character(barn_år_mån), format = "%Y%m"))
+)
+
+
+cohort_table.labels <- to_vec(for (col in names(cohort_table)) 
+  if(is.null(attr(cohort_table[[col]], "label"))) col 
+  else attr(cohort_table[[col]], "label"))
+
+psoriasis_diagonistic_table.labels <- 
+  to_vec(for (col in names(psoriasis_diagonistic_table)) 
+    if(is.null(attr(psoriasis_diagonistic_table[[col]], "label"))) col 
+    else attr(psoriasis_diagonistic_table[[col]], "label"))
+
+cohort_table_labels <- 
+  data.frame("Name" = names(cohort_table), "Label" = cohort_table.labels)
+psoriasis_diagonistic_labels <- 
+  data.frame("Name" = names(psoriasis_diagonistic_table), 
+             "Label" = psoriasis_diagonistic_table.labels)
+
+```
+
+add child birth date to cohort data
+```{r}
+print(dim(cohort_table))
+
+cohort_table <- left_join(cohort_table, 
+                             abis_table,
+                             by = "ABISnr")
+print(dim(cohort_table))
+```
+
+columns of interest for 3rd year
+```{r}
+if ( curr_os == "Windows"){
+  columns_of_interest_file <- "C:\\Users\\debda22\\Documents\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\early_nutrition_1_and_3_years.xlsx"
+} else {
+  columns_of_interest_file <- "/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/early_nutrition_1_and_3_years.xlsx"
+}
+columns_of_interest <- readxl::read_excel(
+  columns_of_interest_file, 
+  sheet = "3 years", 
+  col_names = FALSE
+  )
+
+columns_of_interest <- rbind(columns_of_interest, c("ABISnr", "ABIS number"))
+columns_of_interest <- rbind(columns_of_interest, c("Gender", "Gender"))
+columns_of_interest <- rbind(columns_of_interest, c("AutoimmDisease", "AutoimmuneDisease"))
+columns_of_interest <- rbind(columns_of_interest, c("child_dob", "Birth of children year and month"))
+
+
+colnames(columns_of_interest) <- c("Name", "Label")
+columns_of_interest <- columns_of_interest[!(columns_of_interest$Name %in% c("c_17", "c_18", "c_19", "c_20", "c_21")),]
+
+```
+
+
+drop variables absent in the data
+```{r}
+columns_of_interest <- columns_of_interest[!(columns_of_interest$Name %in% c("c_17", 
+                                                                             "c_18", 
+                                                                             "c_19", 
+                                                                             "c_20", 
+                                                                             "c_21", 
+                                                                             "c_29txt",
+                                                                             "c_110",
+                                                                             "c_112", 
+                                                                             "c_113_1",
+                                                                             "c_117txt", 
+                                                                             "c_117tx",
+                                                                             "c_117_1", 
+                                                                             "c_117_2", 
+                                                                             "c_117_3")),]
+
+```
+
+
+Retain only columns of interest
+```{r}
+
+cohort_table <- cohort_table %>% select(columns_of_interest$Name)
+
+```
+
+
+Merge the cohort data to include psoriasis diagonistics
+```{r}
+psoriasis_data_full <- left_join(cohort_table, 
+                             psoriasis_diagonistic_table,
+                             by = "ABISnr") %>% 
+  mutate(Diagnos = replace(Diagnos, is.na(Diagnos), "")) %>%
+  # reformat the date (of detection)
+  mutate(
+    first_detection = as.Date(as.character(övFörsta), format = "%Y%m%d"), 
+    second_detection = as.Date(as.character(övSenaste), format = "%Y%m%d")
+    ) %>%
+  mutate(
+    age_first_detection = lubridate::time_length(
+      difftime(first_detection,child_dob), "years"),
+    age_second_detection = lubridate::time_length(
+      difftime(second_detection,child_dob), "years")
+  )
+
+```
+
+Remove attributes
+```{r}
+
+for (col in names(psoriasis_data_full)) {
+  if(!(is.null(attr(psoriasis_data_full[[col]], "label")))){
+    attr(psoriasis_data_full[[col]], "label") <- NULL
+  }
+  if(!(is.null(attr(psoriasis_data_full[[col]], "labels")))){
+    attr(psoriasis_data_full[[col]], "labels") <- NULL
+  }
+  if(!(is.null(attr(psoriasis_data_full[[col]], "format.spss")))){
+    attr(psoriasis_data_full[[col]], "format.spss") <- NULL
+  }  
+  if(!(is.null(attr(psoriasis_data_full[[col]], "names")))){
+    attr(psoriasis_data_full[[col]], "names") <- NULL
+  } 
+  if(!(is.null(attr(psoriasis_data_full[[col]], "display_width")))){
+    attr(psoriasis_data_full[[col]], "display_width") <- NULL
+  }   
+}
+
+attr(psoriasis_data_full, "notes") <- NULL
+
+
+for (col in names(psoriasis_data_full)) {
+  if(is.labelled(psoriasis_data_full[[col]])){
+    
+    psoriasis_data_full[col] <- unlabel(psoriasis_data_full[[col]])
+    
+  }
+  
+}
+
+
+psoriasis_data_full <- as.data.frame(psoriasis_data_full)
+
+```
+
+Store explanatory variables
+We store the names of the explanatory columns as a character vector. 
+This will be referenced later.
+
+
+## define variables of interest 
+```{r}
+explanatory_vars <- c(
+  "c_22", 
+  "c_28",
+  "c_29",
+  "c_103",
+  "c_104",
+  "c_105",
+  "c_106",
+  "c_109a",
+  "c_109b",
+  "c_109d",
+  "c_109e",
+  "c_109f",
+  "c_109g",
+  "c_109h",
+  "c_109i",
+  "c_109j",
+  "c_109k",
+  "c_109l",
+  "c_109m",
+  "c_109n",
+  "c_109o",
+  "c_109p",
+  "c_109q",
+  "c_109r",
+  "c_109s",
+  "c_109t",
+  "c_109u",
+  "c_109v",
+  "c_109w",
+  "c_109x",
+  "c_109y",
+  "c_109z",
+  "c_109å",
+  "c_109ä",
+  "c_109ö",
+  "c_114",
+  "c_116",
+  "Gender")
+
+```
+
+convert dichotomous variables to 0/1 
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>%  
+  mutate(across(                                      
+    .cols = all_of(c("Diagnos")),  ## for each column listed and "outcome"
+    .fns = ~case_when(                              
+      . %in% c("L40") ~ 1,  ## recode L40 (psoriasis diagnosis) to 1
+      . %in% c("") ~ 0,       ## not present  to 0
+      TRUE ~ NA_real_)        ## otherwise set to missing
+    )
+  )
+```
+
+remove non cases with other auto immune diseases other than psoriasis
+```{r}
+print("number of participants with other autoimmune diseases")
+print(
+  nrow(
+    psoriasis_data_full[
+      which((
+        (psoriasis_data_full$AutoimmDisease == 1)&
+          (psoriasis_data_full$Diagnos != 1))),]))
+
+print("number of participants before filtering")
+print(nrow(psoriasis_data_full))
+
+psoriasis_data_full <- psoriasis_data_full %>% 
+  filter(!((AutoimmDisease == 1)&(Diagnos != 1)))
+
+print(nrow(psoriasis_data_full))
+```
+
+
+subset data to include only variables of interest and outcome
+```{r}
+psoriasis_data <- psoriasis_data_full[,c("ABISnr", 
+                                         explanatory_vars,
+                                         "age_first_detection",
+                                         "age_second_detection",
+                                         "Diagnos")]
+
+psoriasis_data <- psoriasis_data %>% 
+  mutate(fish = pmin(c_109d,c_109e,c_109f, na.rm = TRUE))
+
+psoriasis_data_full <- psoriasis_data_full[,c(
+  "ABISnr", explanatory_vars, "Diagnos")]
+
+
+```
+
+
+drop rows with missing information for variables of interest
+```{r}
+print("The number of rows remaining in psoriasis data") 
+nrow(psoriasis_data_full)
+
+psoriasis_data_full <- psoriasis_data_full %>% 
+  drop_na(any_of(c("ABISnr", "Diagnos")))
+
+print("Total number of rows in psoriasis data") 
+nrow(psoriasis_data_full)
+```
+custom create variable fish intake from any source and add to list of variables of interest
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>% 
+  mutate(fish = pmin(c_109d,c_109e,c_109f, na.rm = TRUE))
+explanatory_vars <- c(explanatory_vars, "fish")
+```
+
+
+
+```{r}
+explanatory_vars_cats <- names(
+  psoriasis_data_full)[!(names(psoriasis_data_full) %in% 
+                           c("ABISnr", "fish", "Diagnos"))]
+
+```
+
+variable value label correspondence data frame
+```{r}
+explanatory_vars_df <- data.frame(
+  v = character(), 
+  v_labels = character(),
+  labels = character()
+  )
+
+
+for (col in explanatory_vars_cats){
+  v <-list(col)
+  v_labels <- list(attr(cohort_table[[col]], "labels"))
+  curr_dt <- data.frame(I(v[[1]]), I(v_labels[[1]]))
+  curr_dt[["labels"]] <- rownames(curr_dt)
+  
+  explanatory_vars_df <- rbind(explanatory_vars_df,curr_dt)
+}
+
+rownames(explanatory_vars_df) <- seq(1,dim(explanatory_vars_df)[1])
+colnames(explanatory_vars_df) <- c("variable", "value", "label")
+
+```
+
+
+```{r}
+explanatory_vars_df <- explanatory_vars_df %>% 
+  rbind(list(variable = rep("fish",4), value = seq(1,4), 
+             label = c("daily","3-5 times/week","1-2 times/week", "seldom")
+             )
+        )
+explanatory_vars_cats <- c(explanatory_vars_cats, "fish")
+```
+
+
+Looping multiple univariate models
+
+```{r}
+all_parameters <- all_parameters[all_parameters$category_variable != "milk_product",]
+
+variables2exclude <- c("ABISnr", 
+          "age_first_detection", 
+          "age_second_detection", 
+          "age_first_detection_cat",
+          "Diagnos")
+
+data2process <- psoriasis_data_full
+
+output <- univariate_regression(data2process, variables2exclude)
+final_univ_tab_tidy <- output[[1]]
+frq_table_final_univ <- output[[2]]
+
+final_univ_tab_tidy <- final_univ_tab_tidy %>% 
+  add_header_row(
+    values = c("Univariate regression: All genders but without other AD"), 
+    colwidths = 8)
+
+```
+
+
+```{r}
+final_univ_tab_tidy
+
+```
+
+# Multivariable logistic regression
+multivarible regression using variables that were significant in univariate regression
+
+```{r}
+multivar_data <- psoriasis_data_full[,c("ABISnr", "c_22",  "c_106", "c_109e",
+                                        "Gender", "Diagnos")]
+
+multivar_explanatory_vars <- c("c_22", "c_106", "c_109e", "Gender")
+
+multivar_explanatory_vars_cats <- c("other_disability_or_disease", 
+                                    "milk_product_alternate_ref",
+                                    "fish_Baltic", 
+                                    "Gender_cat")
+
+multivar_data <- multivariable_regression_prep(multivar_data,
+                                          multivar_explanatory_vars,
+                                          multivar_explanatory_vars_cats)
+  
+final_data <- multivariable_regression_table(
+  multivar_data,
+  multivar_explanatory_vars_cats)
+
+final_data <- final_data %>% 
+  add_header_row(
+    values = c("Multivariable regression: All genders but without other AD"), 
+    colwidths = 6)
+
+
+```
+
+participants with other disability or disease
+```{r}
+original_multivar_data <- multivar_data
+multivar_data[(multivar_data$c_22 == 1) & (multivar_data$Diagnos == 1),]
+
+```
+
+
+
+save the merged table
+\newpage
+```{r}
+
+final_univ_tab_tidy
+
+```
+
+\newpage
+```{r}
+
+final_data
+
+```
+
+
+```{r}
+# p1 <- cumulative_percentage(multivar_data, 
+#                       "Diagnos", 
+#                       "b_5", 
+#                       "psoriasis",
+#                       inverse_cumul = TRUE)
+# 
+# p2 <- cumulative_percentage(multivar_data, 
+#                       "Diagnos", 
+#                       "b_6", 
+#                       "psoriasis")
+# 
+# # p3 <- cumulative_percentage(multivar_data, 
+# #                       "Diagnos", 
+# #                       "b_8", 
+# #                       "psoriasis")
+# 
+# # p4 <- cumulative_percentage(multivar_data, 
+# #                       "Diagnos", 
+# #                       "b_9", 
+# #                       "psoriasis")
+# 
+# p5 <- cumulative_percentage(multivar_data, 
+#                       "Diagnos", 
+#                       "b_10", 
+#                       "psoriasis",
+#                       inverse_cumul = TRUE)
+
+```
+
+
+plot cumulative percentage to file
+```{r}
+# 
+# pdf(paste(output_dir,"ABIS_3_year_early_nutrition_psoriasis_cumulative_percentage.pdf", sep = "/")
+# )
+# 
+# # for (p in list(p1,p2,p3,p4,p5)) {
+# for (p in list(p1,p2,p5)) {
+#   print(p)
+# }
+# 
+# dev.off()
+
+```
+
+correlation and plot residuals
+```{r}
+pdf(
+  paste(
+    output_dir,
+    "chi_sq_test_and_percentage_breakdown_early_nutrition_year_3_multivarible.pdf",
+    sep = "/")
+    )
+
+for (col in multivar_explanatory_vars_cats) {
+  dt <- trends(multivar_data, col)
+  
+  print(dt[[1]])
+}
+
+dev.off()
+  
+```
+save the tables
+```{r}
+  
+flextable::save_as_html(
+  final_univ_tab_tidy, 
+  path = paste(output_dir,"univariate_table_year_3_ABIS.html", sep = "/")
+  )
+flextable::save_as_docx(
+  final_univ_tab_tidy, 
+  path = paste(output_dir,"univariate_table_year_3_ABIS.docx", sep = "/")
+  )
+
+
+
+flextable::save_as_docx(
+  final_data, 
+  path = paste(output_dir,"multivariable_table_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  final_data, 
+  path = paste(output_dir,"multivariable_table_year_3_ABIS.html", sep = "/")
+  )
+
+```
+
+median age of psoriasis detection
+```{r}
+puberty_age = 13
+
+median_age <- summary(psoriasis_data$age_first_detection)[3]
+median_age <- round(median_age, digits = 2)
+
+print(paste("Median age of psoriasis detection", 
+            as.character(round(median_age,digits = 2))))
+
+```
+
+# Data subset 
+# below and above median age for diagnosis, and also 
+# before and after early puberty that is  below and above 13 years of age
+
+# Univariate Logistic Regression
+
+subset of data
+```{r}
+
+lower_age_puberty <- paste("psoriasis before age", as.character(puberty_age))
+upper_age_puberty <- paste("psoriasis after age", as.character(puberty_age))
+
+psoriasis_data_puberty <- psoriasis_data %>% 
+  mutate(age_first_detection_cat = case_when(
+    age_first_detection < puberty_age ~ lower_age_puberty,
+    age_first_detection >= puberty_age ~ upper_age_puberty, 
+    TRUE ~ "Not detected")
+    )
+```
+
+
+subgroups: puberty age psoriasis detection data set
+```{r}
+psoriasis_data_lt_puberty <- psoriasis_data_puberty %>%
+  filter(age_first_detection_cat %in% c(lower_age_puberty, "Not detected"))
+
+psoriasis_data_lt_puberty$age_first_detection_cat <- factor(
+  psoriasis_data_lt_puberty$age_first_detection_cat)
+
+print(nrow(psoriasis_data_lt_puberty))
+
+psoriasis_data_gt_puberty <- psoriasis_data_puberty %>% 
+  filter(age_first_detection_cat %in% c(upper_age_puberty, "Not detected"))
+
+psoriasis_data_gt_puberty$age_first_detection_cat <- factor(
+  psoriasis_data_gt_puberty$age_first_detection_cat)
+
+print(nrow(psoriasis_data_gt_puberty))
+```
+
+psoriasis cases split for puberty age detection data
+```{r}
+print("psoriasis cases median")
+nrow(psoriasis_data_puberty[psoriasis_data_puberty$Diagnos == 1,])
+
+print(paste("psoriasis cases < ", as.character(puberty_age)))
+nrow(psoriasis_data_lt_puberty[psoriasis_data_lt_puberty$Diagnos == 1,])
+
+print(paste("psoriasis cases > ", as.character(puberty_age)))
+nrow(psoriasis_data_gt_puberty[psoriasis_data_gt_puberty$Diagnos == 1,])
+```
+
+restore the levels for the variables of interest
+```{r}
+all_parameters <- load_all_parameter()
+```
+
+# age >= puberty age
+```{r}
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$breaks[[1]] <- c(0,2,4)
+
+all_parameters[all_parameters$category_variable == "ice_cream",]$labels[[1]] <- c("1-2/3-5 times/week daily", "seldom")
+all_parameters[all_parameters$category_variable == "ice_cream",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "milk_product_alternate_ref",]$labels[[1]] <- c("nothing to 1-2 dl", "3-6 dl", "7-10 dl/ more")
+all_parameters[all_parameters$category_variable == "milk_product_alternate_ref",]$breaks[[1]] <- c(0,2,3,5)
+
+all_parameters <- all_parameters[all_parameters$category_variable != "milk_product",]
+
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$labels[[1]] <- c("1-2/3-5 times/week daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$breaks[[1]] <- c(0,3,4)
+
+variables2exclude <- c("ABISnr", 
+          "age_first_detection", 
+          "age_second_detection",
+          "age_first_detection_cat",
+          "Diagnos")
+
+data2process <- psoriasis_data_gt_puberty
+
+output <- univariate_regression(data2process, variables2exclude)
+univ_table_gt_puberty <- output[[1]]
+frq_table_gt_puberty <- output[[2]]
+
+univ_table_gt_puberty <- univ_table_gt_puberty %>% 
+  add_header_row(
+    values = c(paste("Univariate regression: Detected with psoriasis ",
+               as.character(puberty_age)," years or older")), 
+    colwidths = 8)
+```
+
+
+```{r}
+multivar_data <- psoriasis_data_gt_puberty[,c("ABISnr","c_22", 
+                                              "Gender", "Diagnos")]
+
+multivar_explanatory_vars <- c("c_22", "Gender")
+
+multivar_explanatory_vars_cats <- c("other_disability_or_disease",
+                                    "Gender_cat")
+
+multivar_data <- multivariable_regression_prep(multivar_data,
+                                          multivar_explanatory_vars,
+                                          multivar_explanatory_vars_cats)
+  
+multivariable_regression_gt_puberty <- multivariable_regression_table(
+  multivar_data,
+  multivar_explanatory_vars_cats)
+
+multivariable_regression_gt_puberty <- multivariable_regression_gt_puberty %>% 
+  add_header_row(
+    values = c(paste("Multivariable regression: Detected with psoriasis ",
+               as.character(puberty_age)," years or older")), 
+    colwidths = 6)
+```
+restore the levels for the variables of interest
+```{r}
+all_parameters <- load_all_parameter()
+```
+
+# age < puberty age
+```{r}
+
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$labels[[1]] <- c("1-2/3-5 times/week daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "fish_cat_year_3",]$labels[[1]] <- c("1-2/3-5 times/week daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_cat_year_3",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "macaroni_spaghetti",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "macaroni_spaghetti",]$breaks[[1]] <- c(0,2,4)
+
+all_parameters[all_parameters$category_variable == "cornflakes_muesli",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "cornflakes_muesli",]$breaks[[1]] <- c(0,2,4)
+
+
+all_parameters[all_parameters$category_variable == "sausage",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "sausage",]$breaks[[1]] <- c(0,2,4)
+
+all_parameters[all_parameters$category_variable == "sandwich_fat",]$labels[[1]] <- c("75% fat margarine","low fat margarine/no fat")
+all_parameters[all_parameters$category_variable == "sandwich_fat",]$breaks[[1]] <- c(0,1,3)
+
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$breaks[[1]] <- c(0,2,4)
+
+
+all_parameters <- all_parameters[all_parameters$category_variable != "fish_cat_dichotomous",]
+  
+variables2exclude <- c("ABISnr", 
+          "age_first_detection", 
+          "age_second_detection", 
+          "age_first_detection_cat",
+          "Diagnos")
+
+data2process <- psoriasis_data_lt_puberty
+
+output <- univariate_regression(data2process, variables2exclude)
+univ_table_lt_puberty <- output[[1]]
+frq_table_lt_puberty <- output[[2]]
+
+univ_table_lt_puberty <- univ_table_lt_puberty %>% 
+  add_header_row(
+    values = c(paste("Univariate regression: Detected with psoriasis before",
+               as.character(puberty_age)," years ")), 
+    colwidths = 8)
+```
+
+
+```{r}
+multivar_data <- psoriasis_data_lt_puberty[,c("ABISnr", "c_109e", 
+                                               "Gender","Diagnos")]
+
+multivar_explanatory_vars <- c("c_109e", "Gender")
+
+multivar_explanatory_vars_cats <-  c("fish_Baltic",
+                                     "Gender_cat")
+
+multivar_data <- multivariable_regression_prep(multivar_data,
+                                          multivar_explanatory_vars,
+                                          multivar_explanatory_vars_cats)
+  
+multivariable_regression_lt_puberty <- multivariable_regression_table(
+  multivar_data,
+  multivar_explanatory_vars_cats)
+
+multivariable_regression_lt_puberty <- multivariable_regression_lt_puberty %>% 
+  add_header_row(
+    values = c(paste("Multivariable regression: Detected with psoriasis before",
+               as.character(puberty_age)," years")), 
+    colwidths = 6)
+```
+
+```{r}
+# detection_gt_puberty
+univariate_table <- univ_table_gt_puberty
+
+flextable::save_as_docx(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_gt_puberty_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_gt_puberty_year_3_ABIS.html", sep = "/")
+  )
+
+multivariate_table <- multivariable_regression_gt_puberty
+
+flextable::save_as_docx(
+  multivariate_table, 
+  path = paste(output_dir,"multivariate_table_gt_puberty_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  multivariate_table, 
+  path = paste(output_dir,"multivariate_table_gt_puberty_year_3_ABIS.html", sep = "/")
+  )
+```
+
+
+```{r}
+# detection_lt_puberty
+univariate_table <- univ_table_lt_puberty
+
+flextable::save_as_docx(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_lt_puberty_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_lt_puberty_year_3_ABIS.html", sep = "/")
+  )
+
+multivariate_table <- multivariable_regression_lt_puberty
+
+flextable::save_as_docx(
+  multivariate_table, 
+  path = paste(output_dir,"multivariate_table_lt_puberty_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  multivariate_table, 
+  path = paste(output_dir,"multivariate_table_lt_puberty_year_3_ABIS.html", sep = "/")
+  )
+```
+
+
+```{r}
+psoriasis_data_boys <- psoriasis_data %>% filter(Gender == 0)
+psoriasis_data_girls <- psoriasis_data %>% filter(Gender == 1)
+
+print("number of boy participant")
+print(nrow(psoriasis_data_boys))
+
+print("number of psoriasis cases in boys")
+print(nrow(psoriasis_data_boys[psoriasis_data_boys$Diagnos == 1,]))
+
+print("number of girl participant")
+print(nrow(psoriasis_data_girls))
+
+print("number of psoriasis cases in girls")
+print(nrow(psoriasis_data_girls[psoriasis_data_girls$Diagnos == 1,]))
+```
+restore the levels for the variables of interest
+```{r}
+all_parameters <- load_all_parameter()
+```
+
+
+# boys only
+```{r}
+all_parameters <-all_parameters[all_parameters$category_variable != "milk_product",]
+
+all_parameters[all_parameters$category_variable == "milk_product_alternate_ref",]$labels[[1]] <- c("nothing/ 1-2 dl", "3-6 dl","7-10 dl", "more than 1 litre")
+all_parameters[all_parameters$category_variable == "milk_product_alternate_ref",]$breaks[[1]] <- c(0,2,3,4,5)
+# 
+milk_alt_ref = "nothing/ 1-2 dl"
+
+all_parameters[all_parameters$category_variable == "fish_lake",]$labels[[1]] <- c("1-2/3-5 times/week - daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_lake",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$labels[[1]] <- c("1-2/3-5  times/week - daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "fish_cat_year_3",]$labels[[1]] <- c("1-2/3-5 times/week - daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_cat_year_3",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters <-all_parameters[all_parameters$category_variable != "fish_cat_dichotomous",]
+
+all_parameters <-all_parameters[all_parameters$category_variable != "red_meat_dichotomous",]
+
+all_parameters <-all_parameters[all_parameters$category_variable != "candy",]
+
+all_parameters[all_parameters$category_variable == "heavy_creme",]$labels[[1]] <- c("1-2/3-5 times/week - daily", "seldom")
+all_parameters[all_parameters$category_variable == "heavy_creme",]$breaks[[1]] <- c(0,3,4)
+
+
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "cakes_pastry_biscuits",]$breaks[[1]] <- c(0,2,4)
+
+
+all_parameters[all_parameters$category_variable == "chocolate_candy_bar",]$labels[[1]] <- c("1-2/3-5 times/week - daily","seldom")
+all_parameters[all_parameters$category_variable == "chocolate_candy_bar",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters[all_parameters$category_variable == "cornflakes_muesli",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week - seldom")
+all_parameters[all_parameters$category_variable == "cornflakes_muesli",]$breaks[[1]] <- c(0,2,4)
+
+all_parameters <- all_parameters[all_parameters$variable2categorise != "Gender",]
+
+variables2exclude <- c("ABISnr", 
+          "age_first_detection", 
+          "age_second_detection",
+          "age_first_detection_cat",
+          "Gender",
+          "Diagnos")
+
+data2process <- psoriasis_data_boys
+
+output <- univariate_regression(data2process, 
+                                variables2exclude,
+                                milk_alt_ref = milk_alt_ref)
+univ_table_boys <- output[[1]]
+frq_table_boys <- output[[2]]
+
+univ_table_boys <- univ_table_boys %>% 
+  add_header_row(
+    values = c("Univariate regression: Detected with psoriasis in boys"), 
+    colwidths = 8)
+```
+
+## for boys only "other_disability_or_disease was found to be significant in univariate regression
+
+restore the levels for the variables of interest
+```{r}
+all_parameters <- load_all_parameter()
+```
+
+# girls only
+```{r}
+all_parameters <- all_parameters[all_parameters$variable2categorise != "Gender",]
+all_parameters <- all_parameters[all_parameters$category_variable != "macaroni_spaghetti",]
+
+all_parameters[all_parameters$category_variable == "sandwich_fat",]$labels[[1]] <- c("75% fat margarine","low fat margarine/no fat")
+all_parameters[all_parameters$category_variable == "sandwich_fat",]$breaks[[1]] <- c(0,1,3)
+
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$labels[[1]] <- c("1-2/3-5 times/week - daily", "seldom")
+all_parameters[all_parameters$category_variable == "fish_Baltic",]$breaks[[1]] <- c(0,3,4)
+
+all_parameters <- all_parameters[all_parameters$category_variable != "candy",]
+
+all_parameters[all_parameters$category_variable == "fruit_drinks",]$labels[[1]] <- c("3-5 times/week - daily","1-2 times/week/ seldom")
+all_parameters[all_parameters$category_variable == "fruit_drinks",]$breaks[[1]] <- c(0,2,4)
+
+variables2exclude <- c("ABISnr", 
+          "age_first_detection", 
+          "age_second_detection", 
+          "age_first_detection_cat",
+          "c_109v", #"macaroni_spaghetti"
+          "Gender",
+          "Diagnos")
+
+data2process <- psoriasis_data_girls
+
+output <- univariate_regression(data2process, variables2exclude)
+univ_table_girls <- output[[1]]
+frq_table_girls <- output[[2]]
+
+univ_table_girls <- univ_table_girls %>% 
+  add_header_row(
+    values = c("Univariate regression: Detected with psoriasis in girls"), 
+    colwidths = 8)
+```
+
+
+```{r}
+# detection_boys
+univariate_table <- univ_table_boys
+
+flextable::save_as_docx(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_boys_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_boys_year_3_ABIS.html", sep = "/")
+  )
+
+```
+
+
+```{r}
+# detection_girls
+univariate_table <- univ_table_girls
+
+flextable::save_as_docx(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_girls_year_3_ABIS.docx", sep = "/")
+  )
+flextable::save_as_html(
+  univariate_table, 
+  path = paste(output_dir,"univariate_table_girls_year_3_ABIS.html", sep = "/")
+  )
+
+
+```
+
+restore the levels for the variables of interest
+```{r}
+all_parameters <- load_all_parameter()
+```
+
+
+

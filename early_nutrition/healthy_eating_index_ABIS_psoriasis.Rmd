@@ -1,0 +1,1033 @@
+---
+title: "Healthy Eating Index (HEI): ABIS-psoriasis data excluding auto-immune diseases"
+author: "Debojyoti Das"
+date: "2023-04-18"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+source("C://Users/debda22/OneDrive - Linköpings universitet/Rmd_and_R_files/Functions_rmph.R")
+```
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+dir.create("C:/Users/debda22/OneDrive - Linköpings universitet/early_nutrition/healthy_eating_index_results")
+
+ # source("C:/Users/debda22/OneDrive - Linköpings universitet/Rmd_and_R_files/useful_functions_ABIS_psoriasis_no_AD.R", local = knitr::knit_global())
+```
+
+
+```{r}
+pacman::p_load(
+  haven,        # File import
+  here,         # File locator
+  sjlabelled,
+  janitor,      # 
+  data.table,   #
+  flextable,    #
+  comprehenr,   # List comprehension in R
+  tidyverse,    # data management + ggplot2 graphics, 
+  stringr,      # manipulate text strings 
+  purrr,        # loop over objects in a tidy way
+  gtsummary,    # summary statistics and tests 
+  broom,        # tidy up results from regressions
+  lmtest,       # likelihood-ratio tests
+  parameters,   # alternative to tidy up results from regressions
+  see,          # alternative to visualize forest plots
+  easystats,    # Forest plot
+  kableExtra,
+  forestplot,
+  rempsyc,
+  mice,
+  parallel
+  )
+```
+
+Read cohort data from SAV format file
+
+```{r}
+curr_os <- Sys.info()["sysname"][[1]]
+
+if (curr_os == "Windows"){
+  abis_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\ABIS_data_base.sav")
+  # cohort_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\Early_nutrition_230223.sav")
+  psoriasis_diagonistic_table <- read_sav("C:\\Users\\debda22\\OneDrive - Linköpings universitet\\Linkoping_projects\\ABIS_RAW_DATA_SPSS\\L40_corrected.sav")
+  } else {
+  abis_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/ABIS_data_base.sav")
+  # cohort_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/Early_nutrition_230223.sav")
+  psoriasis_diagonistic_table <- read_sav("/Users/debojyoti/OneDrive - Linköpings universitet/Linkoping_projects/ABIS_RAW_DATA_SPSS/L40_corrected.sav")
+  }
+```
+
+
+food groups classification
+```{r}
+fruits_vegetables <- c("b_53", 
+                       "c_109å", 
+                       "b_54", 
+                       "c_109a", 
+                       "b_63", 
+                       "c_109l")
+fruits_vegetables_cats <- c("fruits_1y", 
+                            "fruits_3y", 
+                            "vegetables_1y", 
+                            "vegetables_3y",
+                            "mushrooms_1y",
+                            "mushrooms_3y")
+
+dairy_food <- c("b_97",
+                "c_114", 
+                "b_99",
+                "c_116", 
+                "b_101",
+                "c_109o")
+dairy_food_cats <- c("milk_1y",
+                     "milk_3y",
+                     "yoghurt_1y",
+                     "yoghurt_3y",
+                     "cheese_1y",
+                     "cheese_3y")
+
+red_meat_and_meat_product <- c("b_60",
+                                "c_109h", 
+                                "b_61",
+                                "c_109i", 
+                                "b_62",
+                                "c_109j",
+                                "c_109k")
+red_meat_and_meat_product_cats <- c("game_1y",
+                                "game_3y", 
+                                "beef_1y",
+                                "beef_3y", 
+                                "pork_1y",
+                                "pork_3y",
+                                "sausage_3y")
+
+fish_and_egg <- c("b_56", 
+                  "c_109d", 
+                  "b_57", 
+                  "c_109e", 
+                  "b_58", 
+                  "c_109f", 
+                  "b_59", 
+                  "c_109g")
+fish_and_egg_cats <- c("fish_lake_1y",
+                       "fish_lake_3y",
+                       "fish_Baltic_1y",
+                       "fish_Baltic_3y",
+                       "fish_other_1y",
+                       "fish_other_3y",
+                       "eggs_1y",
+                       "eggs_3y")
+
+soft_drinks <- c("b_94", "c_109z")
+soft_drinks_cats <- c("juice_1y", "juice_3y")
+
+salty_snacks <- c("b_67","c_109n", "c_109w")
+salty_snacks_cats <- c("chips_1y","chips_3y","popcorn_3y")
+
+sweet_snacks <- c("b_65", 
+                  "c_109q", 
+                  "b_66",
+                  "c_109r", 
+                  "b_68",
+                  "c_109p", 
+                  "c_109y")
+sweet_snacks_cats <- c("chocolate_1y", 
+                       "chocolate_3y",
+                       "other_candy_1y",
+                       "other_candy_3y",
+                       "dessert_1y",
+                       "dessert_3y",
+                       "ice_cream_3y")
+```
+
+columns of interest
+```{r}
+columns_of_interest <- data.frame(
+  Name = c("ABISnr",
+           "Gender",
+           fruits_vegetables, 
+           dairy_food,
+           red_meat_and_meat_product,
+           fish_and_egg,
+           soft_drinks,
+           salty_snacks,
+           sweet_snacks),
+  Labels = c("ABIS number",
+             "Gender",
+             fruits_vegetables_cats,
+             dairy_food_cats,
+             red_meat_and_meat_product_cats,
+             fish_and_egg_cats,
+             soft_drinks_cats,
+             salty_snacks_cats,
+             sweet_snacks_cats)
+)
+
+```
+
+
+
+```{r}
+abis_table <- abis_table[,columns_of_interest$Name]
+
+abis_table.labels <- to_vec(for (col in names(abis_table)) 
+  if(is.null(attr(abis_table[[col]], "label"))) col 
+  else attr(abis_table[[col]], "label"))
+
+psoriasis_diagonistic_table.labels <- 
+  to_vec(for (col in names(psoriasis_diagonistic_table)) 
+    if(is.null(attr(psoriasis_diagonistic_table[[col]], "label"))) col 
+    else attr(psoriasis_diagonistic_table[[col]], "label"))
+
+abis_table_labels <- 
+  data.frame("Name" = names(abis_table), "Label" = abis_table.labels)
+psoriasis_diagonistic_labels <- 
+  data.frame("Name" = names(psoriasis_diagonistic_table), 
+             "Label" = psoriasis_diagonistic_table.labels)
+
+```
+
+Merge the data to include psoriasis diagonistics
+
+```{r}
+psoriasis_data_full <- full_join(abis_table, 
+                             psoriasis_diagonistic_table,
+                             by = "ABISnr") %>% 
+  mutate(Diagnos = replace(Diagnos, is.na(Diagnos), "")) 
+
+```
+
+Remove attributes
+
+```{r}
+
+for (col in names(psoriasis_data_full)) {
+  if(!(is.null(attr(psoriasis_data_full[[col]], "label")))){
+    attr(psoriasis_data_full[[col]], "label") <- NULL
+  }
+  if(!(is.null(attr(psoriasis_data_full[[col]], "labels")))){
+    attr(psoriasis_data_full[[col]], "labels") <- NULL
+  }
+  if(!(is.null(attr(psoriasis_data_full[[col]], "format.spss")))){
+    attr(psoriasis_data_full[[col]], "format.spss") <- NULL
+  }  
+  if(!(is.null(attr(psoriasis_data_full[[col]], "names")))){
+    attr(psoriasis_data_full[[col]], "names") <- NULL
+  } 
+  if(!(is.null(attr(psoriasis_data_full[[col]], "display_width")))){
+    attr(psoriasis_data_full[[col]], "display_width") <- NULL
+  }   
+}
+
+attr(psoriasis_data_full, "notes") <- NULL
+
+
+for (col in names(psoriasis_data_full)) {
+  if(is.labelled(psoriasis_data_full[[col]])){
+    
+    psoriasis_data_full[col] <- unlabel(psoriasis_data_full[[col]])
+    
+  }
+  
+}
+
+
+psoriasis_data_full <- as.data.frame(psoriasis_data_full)
+
+```
+
+
+
+convert dichotomous variables to 0/1 
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>%  
+  mutate(across(                                      
+    .cols = all_of(c("Diagnos")),  ## for each column listed and "outcome"
+    .fns = ~case_when(                              
+      . %in% c("L40")   ~ 1,  ## recode L40 (psoriasis diagnosis) to 1
+      . %in% c("") ~ 0,       ## not present  to 0
+      TRUE ~ NA_real_)        ## otherwise set to missing
+    )
+  )
+```
+
+remove non cases with other auto immune diseases other than psoriasis
+```{r}
+print(paste("number of participants with all Autoimmune diseases", 
+      as.character(nrow(psoriasis_data_full))))
+```
+
+
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>% 
+  filter(!((AutoimmDisease == 1)&(Diagnos != 1))) 
+# %>%
+#   filter(!is.na(Gender))
+```
+
+
+```{r}
+print(paste("number of participants without other Autoimmune diseases",
+      as.character(nrow(psoriasis_data_full))))
+```
+
+
+subset data to include only variables of interest and outcome
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>% 
+  select(-c("AutoimmDisease", "övAntal", "övFörsta", "övSenaste"))
+```
+
+factor sex and diagnosis
+```{r}
+psoriasis_data_full$Gender <- factor(psoriasis_data_full$Gender)
+psoriasis_data_full$Diagnos <- factor(psoriasis_data_full$Diagnos)
+
+```
+
+recode values for food items
+```{r}
+food_groups <- c(fruits_vegetables,
+                 dairy_food,
+                 red_meat_and_meat_product,
+                 fish_and_egg,
+                 soft_drinks,
+                 salty_snacks,
+                 sweet_snacks)
+
+food_groups_cat <- c(fruits_vegetables_cats,
+                 dairy_food_cats,
+                 red_meat_and_meat_product_cats,
+                 fish_and_egg_cats,
+                 soft_drinks_cats,
+                 salty_snacks_cats,
+                 sweet_snacks_cats)
+
+for (i in seq_along(food_groups)) {
+      
+  new_column = sym(food_groups_cat[[i]])
+  food = sym(food_groups[[i]])
+  
+  # print(food)
+  # print(new_column)
+
+  if (food_groups[[i]] %in% c("b_53",  "c_109å",
+                  "b_54","c_109a",
+                  "b_55", 
+                  "b_56", "c_109d",
+                  "b_57", "c_109e",
+                  "b_58",  "c_109f",
+                  "b_60", "c_109h",
+                  "b_61", "c_109i",
+                  "b_62", "c_109j", "c_109k",
+                  "b_63", "c_109l",
+                  "b_64",
+                  "b_65", "c_109q", 
+                  "b_66", "c_109r",
+                  "b_67",
+                  "b_68",
+                  "b_69",
+                  "b_73",
+                  "b_79", 
+                  "b_101", "c_109o",
+                  "c_109n", "c_109w",
+                  "c_109p", "c_109y"
+                  )
+      ){
+
+    psoriasis_data_full <- psoriasis_data_full %>%
+      mutate( !!new_column := case_when(
+          !!food == 4 ~ 0.5,  # score for least intake of healthy food per week
+          !!food == 3 ~ 1.5,
+          !!food == 2 ~ 4,
+          !!food == 1 ~ 7,
+          TRUE ~ NA_real_)
+        )
+  }
+  if (food_groups[[i]] %in% c("b_97","c_114", "b_99","c_116")){
+        psoriasis_data_full <- psoriasis_data_full %>%
+      mutate( !!new_column := case_when(
+          !!food == 7 ~ 28, 
+          !!food == 6 ~ 21, 
+          !!food == 5 ~ 14, 
+          !!food == 4 ~ 7, 
+          !!food == 3 ~ 5,
+          !!food == 2 ~ 2,
+          !!food == 1 ~ 0,
+          TRUE ~ NA_real_)
+          )
+  }
+  if (food_groups[[i]] %in% c("b_94", "c_109z")){
+      psoriasis_data_full <- psoriasis_data_full %>%
+    mutate( !!new_column := case_when(
+        !!food == 7 ~ 15, 
+        !!food == 6 ~ 12, 
+        !!food == 5 ~ 8.5, 
+        !!food == 4 ~ 5, 
+        !!food == 3 ~ 2,
+        !!food == 2 ~ 0.5,
+        !!food == 1 ~ 0,
+        TRUE ~ NA_real_)
+        )
+}
+  if (food_groups[[i]] %in% c("b_49")){
+      psoriasis_data_full <- psoriasis_data_full %>%
+    mutate( !!new_column := case_when(
+        !!food == 5 ~ 60, 
+        !!food == 4 ~ 56, 
+        !!food == 3 ~ 28,
+        !!food == 2 ~ 10.5,
+        !!food == 1 ~ 0,
+        TRUE ~ NA_real_)
+        )
+} 
+  if (food_groups[[i]] %in% c("b_59",  "c_109g")){
+      psoriasis_data_full <- psoriasis_data_full %>%
+    mutate( !!new_column := case_when( 
+        !!food == 4 ~ 0.5, 
+        !!food == 3 ~ 1.5,
+        !!food == 2 ~ 4,
+        !!food == 1 ~ 7,
+        TRUE ~ NA_real_)
+        )
+}   
+}
+```
+
+filter out rows with no entries for any food groups
+```{r}
+indices_df <- psoriasis_data_full[,c(
+  "milk_1y",
+  "milk_3y",
+  "yoghurt_1y",
+  "yoghurt_3y",
+  "cheese_1y",
+  "cheese_3y",
+  "fish_lake_1y",
+  "fish_lake_3y",   
+  "fish_Baltic_1y", 
+  "fish_Baltic_3y", 
+  "fish_other_1y",  
+  "fish_other_3y",  
+  "eggs_1y",        
+  "eggs_3y",
+  "fruits_1y",      
+  "fruits_3y",      
+  "vegetables_1y",  
+  "vegetables_3y",  
+  "mushrooms_1y",   
+  "mushrooms_3y",   
+  "game_1y",
+  "game_3y",        
+  "beef_1y",        
+  "beef_3y",        
+  "pork_1y",        
+  "pork_3y",        
+  "sausage_3y",     
+  "chips_1y",      
+  "chips_3y",       
+  "popcorn_3y",     
+  "juice_1y",       
+  "juice_3y",       
+  "chocolate_1y",   
+  "chocolate_3y",   
+  "other_candy_1y",
+  "other_candy_3y", 
+  "dessert_1y",   
+  "dessert_3y",    
+  "ice_cream_3y")]
+
+psoriasis_data_full <- psoriasis_data_full[rowSums(is.na(indices_df)) != ncol(indices_df), ]
+```
+
+```{r}
+print("Number of participants")
+print(psoriasis_data_full %>% nrow())
+
+print("Number of participants with psoriasis")
+print(psoriasis_data_full %>% filter(Diagnos == 1) %>% nrow())
+```
+
+retain recoded food items only
+```{r}
+psoriasis_data_full <- psoriasis_data_full %>%
+  select(-food_groups)
+```
+
+save original data
+```{r}
+original_data_with_missing_entries <- psoriasis_data_full
+```
+
+```{r}
+# missingness per variable
+P <-sapply(psoriasis_data_full, function(x) mean(is.na(x)))
+```
+
+impute missing entries: parallel
+
+```{r}
+number_of_imputations <- nimpute(psoriasis_data_full, method = "avg")
+print("number of imputations based on mean missingness")
+print(number_of_imputations)
+
+n_core = detectCores()
+number_imputation_per_core = 2
+
+print("press second button on interactive window!!")
+imp_parallel <- futuremice(
+  psoriasis_data_full, 
+  m = number_of_imputations,
+  parallelseed = 123456,
+  n.core = n_core,
+  seed = 12345,
+  use.logical = TRUE,
+  n.imp.core = number_imputation_per_core,
+  maxit = 0
+  )
+
+pred <- imp_parallel$predictorMatrix
+
+# removes the variable ABISnr from the set of predictors, but still leaves it to be predicted by the other variables.
+pred[,"ABISnr"] <- 0
+
+```
+
+parallel imputation run
+
+```{r}
+start_time <- Sys.time()
+print("press second button on interactive window!!")
+
+imp_parallel <- futuremice(
+            psoriasis_data_full, 
+            m = number_of_imputations,
+            parallelseed = 123456,
+            n.core = n_core,
+            seed = 12345,
+            use.logical = TRUE,
+            n.imp.core = number_imputation_per_core,
+            predictorMatrix = pred, 
+            # post = post,
+            maxit = 10,
+            progress = TRUE)
+
+end_time <- Sys.time()
+print("parallel imputation time")
+print(end_time - start_time)
+```
+
+extract imputed data
+
+```{r}
+# extract imputed data
+
+imputed_psoriasis_data_full <- complete(imp_parallel, action = "long", include = TRUE)
+original_psoriasis_data_full <- complete(imp_parallel, action = 0)
+```
+
+
+Compute HEI for food groups
+
+```{r}
+imputed_psoriasis_data_full <- imputed_psoriasis_data_full %>%
+  group_by(.imp) %>%
+  mutate(
+    ######### FRUIT AND VEGETABLES ############
+    # 1 year
+    fruits_vegs_1y = rowSums(across(c(fruits_1y,
+                         vegetables_1y,
+                         mushrooms_1y)),
+                         na.rm = TRUE),
+    # 3 years
+    fruits_vegs_3y = rowSums(across(c(fruits_3y,
+                         vegetables_3y,
+                         mushrooms_3y)),
+                         na.rm = TRUE),
+    ######### DAIRY FOODS #####################
+    # 1 year
+    dairy_foods_1y = rowSums(across(c(milk_1y,
+                         yoghurt_1y,
+                         cheese_1y)),
+                         na.rm = TRUE),
+    # 3 years
+    dairy_foods_3y = rowSums(across(c(milk_3y,
+                         yoghurt_3y,
+                         cheese_3y)),
+                         na.rm = TRUE),
+    ######### RED MEAT AND MEAT PRODUCTS #########
+    # 1 year
+    red_meat_1y = rowSums(across(c(game_1y,
+                     beef_1y,
+                     pork_1y)),
+                     na.rm = TRUE),
+    # 3 years
+    red_meat_3y = rowSums(across(c(game_3y,
+                     beef_3y,
+                     pork_3y,
+                     sausage_3y)),
+                     na.rm = TRUE),
+    ######### WHITE MEAT AND FISH#########
+    # 1 year
+    white_meat_1y = rowSums(across(c(fish_lake_1y,
+                        fish_Baltic_1y,
+                        fish_other_1y,
+                        eggs_1y)),
+                        na.rm = TRUE),
+    # 3 years
+    white_meat_3y = rowSums(across(c(fish_lake_3y,
+                        fish_Baltic_3y,
+                        fish_other_3y,
+                        eggs_3y)),
+                        na.rm = TRUE),
+    ######### SOFT DRINKS #########
+    # 1 year
+    soft_drinks_1y = rowSums(across(c(juice_1y)),
+                         na.rm = TRUE),
+    # 3 years
+    soft_drinks_3y = rowSums(across(c(juice_3y)),
+                     na.rm = TRUE),
+    ######### SALTY SNACKS #########
+    # 1 year
+    salty_snacks_1y = rowSums(across(c(chips_1y)),
+                          na.rm = TRUE),
+    # 3 years
+    salty_snacks_3y = rowSums(across(c(chips_3y,
+                          popcorn_3y)),
+                          na.rm = TRUE),
+    ######### SWEET SNACKS#########
+    # 1 year
+    sweet_snacks_1y = rowSums(across(c(chocolate_1y,
+                          other_candy_1y,
+                          dessert_1y)),
+                          na.rm = TRUE),
+    # 3 years
+    sweet_snacks_3y = rowSums(across(c(chocolate_3y,
+                          other_candy_3y,
+                          dessert_3y,
+                          ice_cream_3y)),
+                          na.rm = TRUE)
+
+  )
+
+
+```
+
+
+```{r}
+# psoriasis_data_full <- psoriasis_data_full %>%
+#   mutate(
+#     ######### FRUIT AND VEGETABLES ############
+#     # 1 year
+#     fruits_vegs_1y = rowSums(across(c(fruits_1y, 
+#                          vegetables_1y, 
+#                          mushrooms_1y)), 
+#                          na.rm = TRUE),
+#     # 3 years
+#     fruits_vegs_3y = rowSums(across(c(fruits_3y, 
+#                          vegetables_3y, 
+#                          mushrooms_3y)), 
+#                          na.rm = TRUE),
+#     ######### DAIRY FOODS #####################
+#     # 1 year
+#     dairy_foods_1y = rowSums(across(c(milk_1y,
+#                          yoghurt_1y,
+#                          cheese_1y)),
+#                          na.rm = TRUE),
+#     # 3 years
+#     dairy_foods_3y = rowSums(across(c(milk_3y,
+#                          yoghurt_3y,
+#                          cheese_3y)),
+#                          na.rm = TRUE),
+#     ######### RED MEAT AND MEAT PRODUCTS #########
+#     # 1 year
+#     red_meat_1y = rowSums(across(c(game_1y,
+#                      beef_1y,
+#                      pork_1y)),
+#                      na.rm = TRUE),
+#     # 3 years
+#     red_meat_3y = rowSums(across(c(game_3y,
+#                      beef_3y,
+#                      pork_3y,
+#                      sausage_3y)),
+#                      na.rm = TRUE),
+#     ######### WHITE MEAT AND FISH#########
+#     # 1 year
+#     white_meat_1y = rowSums(across(c(fish_lake_1y,
+#                         fish_Baltic_1y,
+#                         fish_other_1y,
+#                         eggs_1y)), 
+#                         na.rm = TRUE),
+#     # 3 years
+#     white_meat_3y = rowSums(across(c(fish_lake_3y,
+#                         fish_Baltic_3y,
+#                         fish_other_3y,
+#                         eggs_3y)), 
+#                         na.rm = TRUE),
+#     ######### SOFT DRINKS #########
+#     # 1 year
+#     soft_drinks_1y = rowSums(across(c(juice_1y)), 
+#                          na.rm = TRUE),
+#     # 3 years
+#     soft_drinks_3y = rowSums(across(c(juice_3y)), 
+#                      na.rm = TRUE),
+#     ######### SALTY SNACKS #########
+#     # 1 year
+#     salty_snacks_1y = rowSums(across(c(chips_1y)),
+#                           na.rm = TRUE),
+#     # 3 years
+#     salty_snacks_3y = rowSums(across(c(chips_3y,
+#                           popcorn_3y)),
+#                           na.rm = TRUE),
+#     ######### SWEET SNACKS#########
+#     # 1 year
+#     sweet_snacks_1y = rowSums(across(c(chocolate_1y,
+#                           other_candy_1y)),
+#                           na.rm = TRUE),
+#     # 3 years
+#     sweet_snacks_3y = rowSums(across(c(chocolate_3y,
+#                           other_candy_3y,
+#                           dessert_3y,
+#                           ice_cream_3y)), 
+#                           na.rm = TRUE)
+# 
+#   )
+# 
+
+```
+
+filter/ remove participants with no data on any of the food groups
+```{r}
+# 
+# print(paste("number of participants before filtering",
+# as.character(nrow(psoriasis_data_full))))
+# 
+# psoriasis_data_full <- psoriasis_data_full[rowSums(psoriasis_data_full[,c(
+#       "fruits_vegs_1y",
+#       "fruits_vegs_3y",
+#       "dairy_foods_1y",
+#       "dairy_foods_3y",
+#       "red_meat_1y",
+#       "red_meat_3y",
+#       "white_meat_1y",
+#       "white_meat_3y",
+#       "soft_drinks_1y",
+#       "soft_drinks_3y",
+#       "salty_snacks_1y",
+#       "salty_snacks_3y",
+#       "sweet_snacks_1y",
+#       "sweet_snacks_3y"
+#       )])>0,]
+# 
+# print(paste("number of participants after filtering",
+# as.character(nrow(psoriasis_data_full))))
+# 
+# print(paste("number of participants with psoriasis after filtering",
+# as.character(
+#   nrow(
+#     psoriasis_data_full[psoriasis_data_full$Diagnos == 1,]))))
+
+```
+
+healthy and unhealthy food groups
+```{r}
+
+healthy_food_groups <- c(
+  "fruits_vegs_1y", 
+  "fruits_vegs_3y", 
+  "dairy_foods_1y",
+  "dairy_foods_3y",
+  "white_meat_1y",
+  "white_meat_3y" 
+  )
+unhealthy_food_groups <- c(
+  "red_meat_1y",
+  "red_meat_3y", 
+  "soft_drinks_1y",
+  "soft_drinks_3y", 
+  "salty_snacks_1y", 
+  "salty_snacks_3y",
+  "sweet_snacks_1y", 
+  "sweet_snacks_3y"
+)
+```
+
+```{r}
+get_quantiles <- function(curr_vector){
+  return(
+    quantile(curr_vector, probs = c(0.25,0.50,0.75,1.0), na.rm = TRUE)
+  )
+}
+```
+
+
+```{r}
+for (fg in healthy_food_groups) {
+
+  fg_q = paste(fg,"_q", sep = "")
+  
+  fg <- sym(fg)
+  fg_q <- sym(fg_q)
+  
+  imputed_psoriasis_data_full <- imputed_psoriasis_data_full %>%
+    group_by(.imp) %>%
+    mutate( !!fg_q := case_when( 
+    !!fg <= get_quantiles(.data[[fg]])[[1]] ~ 1, 
+    (!!fg > get_quantiles(.data[[fg]])[[1]]) & (!!fg <= get_quantiles(.data[[fg]])[[2]]) ~ 2,
+    (!!fg > get_quantiles(.data[[fg]])[[2]]) & (!!fg <= get_quantiles(.data[[fg]])[[3]]) ~ 3,
+    (!!fg > get_quantiles(.data[[fg]])[[3]]) & (!!fg <= get_quantiles(.data[[fg]])[[4]]) ~ 4)
+    )
+  
+}
+
+for (fg in unhealthy_food_groups) {
+
+  fg_q = paste(fg,"_q", sep = "")
+  
+  fg <- sym(fg)
+  fg_q <- sym(fg_q)
+  
+  imputed_psoriasis_data_full <- imputed_psoriasis_data_full %>%
+    group_by(.imp) %>%
+    mutate( !!fg_q := case_when( 
+    !!fg <= get_quantiles(.data[[fg]])[[1]] ~ 4, 
+    (!!fg > get_quantiles(.data[[fg]])[[1]]) & (!!fg <= get_quantiles(.data[[fg]])[[2]]) ~ 3,
+    (!!fg > get_quantiles(.data[[fg]])[[2]]) & (!!fg <= get_quantiles(.data[[fg]])[[3]]) ~ 2,
+    (!!fg > get_quantiles(.data[[fg]])[[3]]) & (!!fg <= get_quantiles(.data[[fg]])[[4]]) ~ 1)
+    )
+  
+}
+
+```
+
+divide food groups into quartiles based on their intake
+```{r}
+# for (fg in healthy_food_groups) {
+#   q = quantile(psoriasis_data_full[[fg]], 
+#                probs = c(0.25,0.50,0.75,1.0))
+#   q1 = q[1]
+#   q2 = q[2]
+#   q3 = q[3]
+#   q4 = q[4]
+#   
+#   fg_q = paste(fg,"_q", sep = "")
+#   
+#   fg <- sym(fg)
+#   fg_q <- sym(fg_q)
+#   
+#   psoriasis_data_full <- psoriasis_data_full %>%
+#     mutate( !!fg_q := case_when( 
+#     !!fg <= q1 ~ 1, 
+#     (!!fg > q1) & (!!fg <= q2) ~ 2,
+#     (!!fg > q2) & (!!fg <= q3) ~ 3,
+#     (!!fg > q3) & (!!fg <= q4) ~ 4)
+#     )
+#   
+# }
+# 
+# for (fg in unhealthy_food_groups) {
+#   q = quantile(psoriasis_data_full[[fg]], 
+#                probs = c(0.25,0.50,0.75,1.0))
+#   q1 = q[1]
+#   q2 = q[2]
+#   q3 = q[3]
+#   q4 = q[4]
+#   
+#   fg_q = paste(fg,"_q", sep = "")
+#   
+#   fg <- sym(fg)
+#   fg_q <- sym(fg_q)
+#   
+#   psoriasis_data_full <- psoriasis_data_full %>%
+#     mutate( !!fg_q := case_when( 
+#     !!fg <= q1 ~ 4, 
+#     (!!fg > q1) & (!!fg <= q2) ~ 3,
+#     (!!fg > q2) & (!!fg <= q3) ~ 2,
+#     (!!fg > q3) & (!!fg <= q4) ~ 1)
+#     )
+#   
+# }
+```
+
+compute total Healthy Eating Index (HEI)
+```{r}
+year_1_list <- c()
+year_3_list <- c()
+
+quartile_columns <- names(imputed_psoriasis_data_full)[to_vec(for (i in names(imputed_psoriasis_data_full)) grepl("_q$",i))]
+
+for (f in quartile_columns) {
+  if(length(grep("_1y",f)) != 0){
+    year_1_list <- c(year_1_list,f)
+  }
+  if(length(grep("_3y",f)) != 0){
+    year_3_list <- c(year_3_list,f)
+  }
+}
+
+imputed_psoriasis_data_full <- imputed_psoriasis_data_full %>%
+  group_by(.imp) %>%
+  mutate(
+    ######### HEI 1 year ############
+    # 1 year
+    hei_score_1y = rowSums(across(year_1_list), 
+                         na.rm = TRUE),
+    ######### HEI 3 year ############
+    # 3 year
+    hei_score_3y = rowSums(across(year_3_list), 
+                         na.rm = TRUE)
+    
+    )
+```
+get thirds
+```{r}
+get_thirds <- function(curr_vector){
+  return(
+    quantile(curr_vector, probs = c(0.333,0.667,1.0), na.rm = TRUE)
+  )
+}
+```
+
+
+divide hei score into thirds
+```{r}
+for (hei_year in c("hei_score_1y", "hei_score_3y")) {
+
+  hei_year_t = paste(hei_year,"_thirds", sep = "")
+  
+  hei_year <- sym(hei_year)
+  hei_year_t <- sym(hei_year_t)
+  
+  imputed_psoriasis_data_full <- imputed_psoriasis_data_full %>%
+    group_by(.imp) %>%
+    mutate( !!hei_year_t := case_when( 
+      !!hei_year <= get_thirds(.data[[hei_year]])[[1]] ~ "low", 
+      (!!hei_year > get_thirds(.data[[hei_year]])[[1]]) & (!!hei_year <= get_thirds(.data[[hei_year]])[[2]]) ~ "medium",
+      (!!hei_year > get_thirds(.data[[hei_year]])[[2]]) & (!!hei_year <= get_thirds(.data[[hei_year]])[[3]]) ~ "high"
+      )
+    ) %>%
+    mutate(!!hei_year_t := factor(.data[[hei_year_t]], levels = c("high","medium","low")))
+}
+```
+
+convert back to mids object
+```{r}
+imputed_and_recoded_data <- imputed_psoriasis_data_full %>% 
+  select(ABISnr,.imp,.id,
+         hei_score_1y,hei_score_3y,
+         hei_score_1y_thirds,hei_score_3y_thirds,Diagnos)
+
+imputed_and_recoded_data <- as.mids(imputed_and_recoded_data)
+```
+
+glm on hei variable
+```{r}
+iter = 1
+for (curr_var in c("hei_score_1y_thirds", "hei_score_3y_thirds")){
+  models_complete <- with(imputed_and_recoded_data, 
+                          glm(as.formula(paste("Diagnos ~",curr_var)), 
+                              family = "binomial"))
+  pool.fit <- pool(models_complete)
+
+  if (iter == 1){
+    imputed_regression_table_thirds <- summary(
+      pool.fit, exponentiate = TRUE, conf.int = TRUE) %>%
+      mutate_if(is.numeric, round,3) 
+  } else {
+    imputed_regression_table_thirds <- rbind(
+      imputed_regression_table_thirds,
+      summary(pool.fit, exponentiate = TRUE, conf.int = TRUE) %>%
+        mutate_if(is.numeric, round,3))
+  }
+  iter = iter + 1
+
+  }
+
+iter = 1
+
+for (curr_var in c("hei_score_1y", "hei_score_3y")){
+  models_complete <- with(imputed_and_recoded_data, 
+                          glm(as.formula(paste("Diagnos ~",curr_var)), 
+                              family = "binomial"))
+  pool.fit <- pool(models_complete)
+  if (iter == 1){
+  imputed_regression_table <- summary(
+    pool.fit, exponentiate = TRUE, conf.int = TRUE) %>%
+    mutate_if(is.numeric, round,3) 
+  } else {
+  imputed_regression_table <- rbind(
+    imputed_regression_table_thirds,
+    summary(pool.fit, exponentiate = TRUE, conf.int = TRUE) %>%
+      mutate_if(is.numeric, round,3))
+  }
+  iter = iter + 1
+  
+  }
+```
+
+
+
+```{r}
+original_data <- complete(imputed_and_recoded_data, action = 0)
+
+iter = 1
+
+for (iv in c("hei_score_1y","hei_score_3y","hei_score_1y_thirds","hei_score_3y_thirds")){
+  if (iv %in% c("hei_score_1y","hei_score_3y")){
+    curr_counts <- data.frame(
+      no = original_data %>% filter(Diagnos==0) %>% nrow(),
+      yes = original_data %>% filter(Diagnos==1) %>% nrow()
+      )
+  } else {
+    curr_counts <- original_data %>% tabyl(!!sym(iv), Diagnos)
+    curr_counts <- data.frame(
+      no = curr_counts[,2],
+      yes = curr_counts[,3]
+    )
+  }
+  
+  fit <- glm(as.formula(paste("Diagnos ~ ", iv)), family = "binomial", data = original_data)
+  if (iter == 1){
+   original_data_regression_table <- cbind(
+     curr_counts,fit %>% tidy(exponentiate = TRUE, conf.int = TRUE))
+  } else {
+    original_data_regression_table <- rbind(original_data_regression_table,
+                                            cbind(
+                                              curr_counts,fit %>% 
+                                                tidy(exponentiate = TRUE,
+                                                     conf.int = TRUE)
+                                              )
+                                            )
+  }
+  iter = iter + 1
+
+}
+```
+
+```{r}
+curr_os <- Sys.info()["sysname"][[1]]
+
+if (curr_os == "Windows"){
+  output_dir <- "C:\\Users\\debda22\\OneDrive - Linköpings universitet\\early_nutrition\\healthy_eating_index_tables"
+} else {
+  output_dir <- "/Users/debojyoti/OneDrive - Linköpings universitet/early_nutrition/without_auto_immune_disease/healthy_eating_index_tables"
+}
+
+dir.create(output_dir)
+```
+
+
+save all the output tables
+```{r}
+dataframes2save <- to_vec(for (t in names(which(unlist(eapply(.GlobalEnv,is.data.frame))))) if(grepl("_regression_table",t)) t)
+for (idf in seq_along(dataframes2save)) {
+    filename <-paste(output_dir, paste(dataframes2save[[idf]], ".xlsx", collapse = ""), sep = "/")
+    curr_dataframe2save <- get(dataframes2save[[1]])
+    print(paste("saving ...",dataframes2save[[idf]]))
+    writexl::write_xlsx(curr_dataframe2save, path = filename)
+} 
+```
